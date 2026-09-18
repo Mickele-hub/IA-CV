@@ -21,7 +21,7 @@ def extract_text_from_pdf(pdf_file) -> str:
     text = ""
 
     for page in document:
-        text += page.get_text()
+        text += page.get_text("text", sort=True)
 
     document.close()
 

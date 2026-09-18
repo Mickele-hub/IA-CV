@@ -31,7 +31,10 @@ def extract_phone(text: str) -> str | None:
         # Numéros avec préfixe local :
         # 034 12 345 67
         # 032 12 345 67
-        r"\b0\d{2}[\s.-]?(?:\d[\s.-]?){6,9}\b"
+        r"\b0\d{2}[\s.-]?(?:\d[\s.-]?){6,9}\b",
+
+        # Format générique type 123-456-7890 ou 123.456.7890
+        r"\b\d{3}[\s.-]\d{3}[\s.-]\d{4}\b"
     ]
 
     for pattern in patterns:
@@ -136,24 +139,33 @@ def extract_name(text: str) -> str | None:
 
     candidates = []
 
-    for line in lines[:20]:
+    window = lines[:20]
+    i = 0
+
+    while i < len(window):
+
+        line = window[i]
 
         # Ignorer les lignes contenant des emails
         if "@" in line:
+            i += 1
             continue
 
         # Ignorer les lignes contenant des chiffres
         if re.search(r"\d", line):
+            i += 1
             continue
 
         # Ignorer les lignes trop longues
         if len(line) > 50:
+            i += 1
             continue
 
         normalized = line.lower().strip()
 
         # Ignorer les titres connus
         if normalized in ignored_keywords:
+            i += 1
             continue
 
         # Ignorer les lignes contenant des mots-clés
@@ -161,15 +173,31 @@ def extract_name(text: str) -> str | None:
             keyword in normalized
             for keyword in ignored_keywords
         ):
+            i += 1
             continue
 
         words = line.split()
 
-        # Un nom contient généralement 2 à 4 mots
+        # Cas normal : la ligne contient déjà 2 à 4 mots
         if 2 <= len(words) <= 4:
 
             if is_valid_name(line):
                 candidates.append(line)
+                break
+
+        # Cas d'un nom éclaté sur deux lignes distinctes
+        # (ex: "Andréa" sur une ligne, "Sanchez" sur la
+        # suivante, à cause de la mise en page du CV)
+        elif len(words) == 1 and i + 1 < len(window):
+
+            next_line = window[i + 1]
+            merged = f"{line} {next_line}"
+
+            if is_valid_name(merged):
+                candidates.append(merged)
+                break
+
+        i += 1
 
     if candidates:
         return candidates[0]
@@ -248,4 +276,3 @@ def extract_candidate_info(text: str) -> dict:
         "email": extract_email(text),
         "phone": extract_phone(text)
     }
-
