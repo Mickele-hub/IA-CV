@@ -11,3 +11,7 @@ gradio
 requests
 pytest
 httpx
+sentence-transformers
+datasets
+spacy
+torch
