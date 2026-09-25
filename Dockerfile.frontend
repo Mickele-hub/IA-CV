@@ -1,0 +1,14 @@
+# syntax=docker/dockerfile:1
+ 
+FROM python:3.11-slim
+ 
+WORKDIR /app
+ 
+COPY requirements-front.txt .
+RUN pip install --no-cache-dir -r requirements-front.txt
+ 
+COPY frontend/ ./frontend/
+ 
+EXPOSE 7860
+ 
+CMD ["python", "frontend/gradio_app.py"]

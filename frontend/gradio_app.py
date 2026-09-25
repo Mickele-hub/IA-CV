@@ -1,35 +1,43 @@
+import os
+ 
 import gradio as gr
 import requests
-
-
-API_URL = "http://127.0.0.1:8000/analyze"
-
-
+ 
+ 
+# En local (hors Docker), le backend tourne sur localhost.
+# En Docker Compose, la variable d'environnement API_URL est
+# définie sur http://backend:8000/analyze (voir docker-compose.yml)
+# — les conteneurs se joignent par nom de service, pas par
+# 127.0.0.1, qui pointerait vers le conteneur du frontend
+# lui-même.
+API_URL = os.environ.get("API_URL", "http://127.0.0.1:8000/analyze")
+ 
+ 
 def analyze_cv(cv_file, job_description):
     """
-    Envoie le CV et l'offre d'emploi à l'API SmartCV AI.
+    Sends the resume and job description to the SmartCV AI API.
     """
-
+ 
     if cv_file is None:
         return (
-            "⚠️ Veuillez sélectionner un CV PDF.",
+            "⚠️ Please select a PDF resume.",
             "",
             "",
             "",
             "",
             ""
         )
-
+ 
     if not job_description or not job_description.strip():
         return (
-            "⚠️ Veuillez saisir une description du poste.",
+            "⚠️ Please enter a job description.",
             "",
             "",
             "",
             "",
             ""
         )
-
+ 
     try:
         with open(cv_file, "rb") as file:
             files = {
@@ -39,49 +47,49 @@ def analyze_cv(cv_file, job_description):
                     "application/pdf"
                 )
             }
-
+ 
             data = {
                 "job_description": job_description
             }
-
+ 
             response = requests.post(
                 API_URL,
                 files=files,
                 data=data,
                 timeout=120
             )
-
+ 
         if response.status_code != 200:
             try:
                 error = response.json().get(
                     "detail",
-                    "Erreur inconnue."
+                    "Unknown error."
                 )
             except Exception:
                 error = response.text
-
+ 
             return (
-                f"❌ Erreur API : {error}",
+                f"❌ API error: {error}",
                 "",
                 "",
                 "",
                 "",
                 ""
             )
-
+ 
         result = response.json()
-
+ 
         candidate = result.get("candidate", {})
-
-        name = candidate.get("name") or "Non détecté"
-        email = candidate.get("email") or "Non détecté"
-        phone = candidate.get("phone") or "Non détecté"
-
+ 
+        name = candidate.get("name") or "Not detected"
+        email = candidate.get("email") or "Not detected"
+        phone = candidate.get("phone") or "Not detected"
+ 
         candidate_info = f"""
 <div class="info-row">
   <div class="info-icon">👤</div>
   <div class="info-content">
-    <span class="info-label">Nom complet</span>
+    <span class="info-label">Full name</span>
     <span class="info-value">{name}</span>
   </div>
 </div>
@@ -95,74 +103,74 @@ def analyze_cv(cv_file, job_description):
 <div class="info-row">
   <div class="info-icon">📞</div>
   <div class="info-content">
-    <span class="info-label">Téléphone</span>
+    <span class="info-label">Phone</span>
     <span class="info-value">{phone}</span>
   </div>
 </div>
 """
-
+ 
         matched = result.get("matched_skills", [])
         missing = result.get("missing_skills", [])
-
+ 
         matched_text = "\n".join(
             f"- ✅ {skill}"
             for skill in matched
         )
-
+ 
         missing_text = "\n".join(
             f"- ⚠️ {skill}"
             for skill in missing
         )
-
+ 
         if not matched:
-            matched_text = "Aucune compétence correspondante détectée."
-
+            matched_text = "No matching skills detected."
+ 
         if not missing:
-            missing_text = "Aucune compétence manquante détectée."
-
+            missing_text = "No missing skills detected."
+ 
         matched_output = f"""
-### ✅ Compétences correspondantes
-
+### ✅ Matching Skills
+ 
 {matched_text}
 """
-
+ 
         missing_output = f"""
-### ⚠️ Compétences à renforcer
-
+### ⚠️ Skills to Improve
+ 
 {missing_text}
 """
-
+ 
         recommendations = result.get(
             "recommendations",
             []
         )
-
+ 
         recommendations_text = "\n".join(
             f"- 💡 {recommendation}"
             for recommendation in recommendations
         )
-
+ 
         if not recommendations_text:
-            recommendations_text = "Aucune recommandation."
-
+            recommendations_text = "No recommendations."
+ 
         recommendations_output = f"""
-### 💡 Recommandations
-
+### 💡 Recommendations
+ 
 {recommendations_text}
 """
-
+ 
         score = result.get("match_score", 0)
-
+ 
         if score >= 75:
-            score_status = "🟢 Très bonne correspondance"
+            score_status = "🟢 Great match"
             score_color = "#10b981"
         elif score >= 50:
-            score_status = "🟡 Correspondance moyenne"
+            score_status = "🟡 Moderate match"
             score_color = "#f59e0b"
         else:
-            score_status = "🔴 Correspondance faible"
+            score_status = "🔴 Weak match"
             score_color = "#ef4444"
-
+ 
         score_output = f"""
 <div class="score-ring-wrap">
   <div class="score-ring" style="background: conic-gradient({score_color} {score * 3.6}deg, #e5e7eb 0deg);">
@@ -171,10 +179,10 @@ def analyze_cv(cv_file, job_description):
     </div>
   </div>
   <p class="score-status">{score_status}</p>
-  <p class="score-caption">Compatibilité entre votre CV et l'offre d'emploi</p>
+  <p class="score-caption">Compatibility between your resume and the job description</p>
 </div>
 """
-
+ 
         return (
             candidate_info,
             score_output,
@@ -183,50 +191,50 @@ def analyze_cv(cv_file, job_description):
             recommendations_output,
             ""
         )
-
+ 
     except requests.exceptions.ConnectionError:
         return (
-            "❌ Impossible de contacter l'API SmartCV AI. "
-            "Vérifiez que FastAPI est lancé.",
+            "❌ Could not reach the SmartCV AI API. "
+            "Make sure FastAPI is running.",
             "",
             "",
             "",
             "",
             ""
         )
-
+ 
     except requests.exceptions.Timeout:
         return (
-            "⏱️ L'analyse a pris trop de temps. "
-            "Veuillez réessayer.",
+            "⏱️ The analysis took too long. "
+            "Please try again.",
             "",
             "",
             "",
             "",
             ""
         )
-
+ 
     except Exception as error:
         return (
-            f"❌ Erreur : {str(error)}",
+            f"❌ Error: {str(error)}",
             "",
             "",
             "",
             "",
             ""
         )
-
-
+ 
+ 
 # =========================================================
-# CSS — DESIGN MODERNE SOMBRE
+# CSS — MODERN DARK DESIGN
 # =========================================================
-
+ 
 CSS = """
 /* =========================
    FONTS
 ========================= */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap');
-
+ 
 /* =========================
    VARIABLES
 ========================= */
@@ -238,40 +246,40 @@ CSS = """
     --border-1: #1e2337;
     --border-2: #2a3048;
     --border-glow: #4f46e5;
-
+ 
     --ink-0: #ffffff;
     --ink-1: #e8ecf5;
     --ink-2: #b8c0d8;
     --ink-3: #7a8298;
     --ink-4: #525a70;
-
+ 
     --brand-1: #6366f1;
     --brand-2: #8b5cf6;
     --brand-3: #06b6d4;
     --brand-4: #ec4899;
-
+ 
     --success: #10b981;
     --warning: #f59e0b;
     --danger: #ef4444;
-
+ 
     --shadow-sm: 0 2px 8px rgba(0,0,0,0.4);
     --shadow-md: 0 8px 24px rgba(0,0,0,0.45);
     --shadow-lg: 0 20px 50px rgba(0,0,0,0.55);
     --shadow-glow: 0 0 40px rgba(99,102,241,0.25);
-
+ 
     --radius-sm: 10px;
     --radius-md: 16px;
     --radius-lg: 22px;
     --radius-xl: 28px;
 }
-
+ 
 /* =========================
    RESET / GLOBAL
 ========================= */
 *, *::before, *::after {
     box-sizing: border-box;
 }
-
+ 
 html, body,
 gradio-app,
 .gradio-container,
@@ -282,7 +290,7 @@ gradio-app,
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
 }
-
+ 
 .gradio-container {
     max-width: 1320px !important;
     margin: 0 auto !important;
@@ -290,7 +298,7 @@ gradio-app,
     position: relative;
     overflow-x: hidden;
 }
-
+ 
 /* Animated background orbs */
 .gradio-container::before {
     content: "";
@@ -304,7 +312,7 @@ gradio-app,
     pointer-events: none;
     animation: floatOrb1 18s ease-in-out infinite;
 }
-
+ 
 .gradio-container::after {
     content: "";
     position: fixed;
@@ -317,22 +325,22 @@ gradio-app,
     pointer-events: none;
     animation: floatOrb2 22s ease-in-out infinite;
 }
-
+ 
 @keyframes floatOrb1 {
     0%, 100% { transform: translate(0, 0) scale(1); }
     50% { transform: translate(60px, 40px) scale(1.08); }
 }
-
+ 
 @keyframes floatOrb2 {
     0%, 100% { transform: translate(0, 0) scale(1); }
     50% { transform: translate(-50px, -30px) scale(1.1); }
 }
-
+ 
 .gradio-container > * {
     position: relative;
     z-index: 1;
 }
-
+ 
 /* =========================
    TYPOGRAPHY
 ========================= */
@@ -341,14 +349,14 @@ h1, h2, h3, h4 {
     color: var(--ink-0) !important;
     letter-spacing: -0.02em;
 }
-
+ 
 h2 { font-size: 22px !important; font-weight: 700 !important; }
 h3 { font-size: 18px !important; font-weight: 700 !important; margin-bottom: 12px !important; }
-
+ 
 p, span, label, li {
     color: var(--ink-1);
 }
-
+ 
 /* =========================
    HERO
 ========================= */
@@ -366,7 +374,7 @@ p, span, label, li {
     box-shadow: var(--shadow-lg), inset 0 1px 0 rgba(255,255,255,0.05);
     animation: heroIn 0.7s cubic-bezier(0.16, 1, 0.3, 1);
 }
-
+ 
 .hero::before {
     content: "";
     position: absolute;
@@ -378,7 +386,7 @@ p, span, label, li {
     pointer-events: none;
     mask-image: radial-gradient(ellipse at center, black 30%, transparent 75%);
 }
-
+ 
 .hero::after {
     content: "";
     position: absolute;
@@ -390,17 +398,17 @@ p, span, label, li {
     pointer-events: none;
     animation: pulseGlow 6s ease-in-out infinite;
 }
-
+ 
 @keyframes pulseGlow {
     0%, 100% { opacity: 0.8; transform: scale(1); }
     50% { opacity: 1; transform: scale(1.08); }
 }
-
+ 
 @keyframes heroIn {
     from { opacity: 0; transform: translateY(-20px) scale(0.98); }
     to { opacity: 1; transform: translateY(0) scale(1); }
 }
-
+ 
 .hero-badge {
     display: inline-flex;
     align-items: center;
@@ -420,12 +428,12 @@ p, span, label, li {
     box-shadow: 0 4px 20px rgba(99,102,241,0.25);
     animation: badgeIn 0.6s 0.2s backwards cubic-bezier(0.16, 1, 0.3, 1);
 }
-
+ 
 @keyframes badgeIn {
     from { opacity: 0; transform: translateY(-8px); }
     to { opacity: 1; transform: translateY(0); }
 }
-
+ 
 .hero h1 {
     font-size: 52px;
     font-weight: 800;
@@ -439,12 +447,12 @@ p, span, label, li {
     z-index: 2;
     animation: titleIn 0.7s 0.3s backwards cubic-bezier(0.16, 1, 0.3, 1);
 }
-
+ 
 @keyframes titleIn {
     from { opacity: 0; transform: translateY(12px); }
     to { opacity: 1; transform: translateY(0); }
 }
-
+ 
 .hero p {
     font-size: 17px;
     line-height: 1.7;
@@ -455,7 +463,7 @@ p, span, label, li {
     z-index: 2;
     animation: titleIn 0.7s 0.4s backwards cubic-bezier(0.16, 1, 0.3, 1);
 }
-
+ 
 /* =========================
    CARDS
 ========================= */
@@ -471,7 +479,7 @@ p, span, label, li {
     overflow: hidden;
     animation: cardIn 0.6s backwards cubic-bezier(0.16, 1, 0.3, 1);
 }
-
+ 
 .card::before {
     content: "";
     position: absolute;
@@ -483,27 +491,27 @@ p, span, label, li {
     opacity: 0;
     transition: opacity 0.35s ease;
 }
-
+ 
 .card:hover {
     border-color: var(--border-2);
     transform: translateY(-3px);
     box-shadow: var(--shadow-lg), 0 0 0 1px rgba(99,102,241,0.1);
 }
-
+ 
 .card:hover::before {
     opacity: 1;
 }
-
+ 
 @keyframes cardIn {
     from { opacity: 0; transform: translateY(16px); }
     to { opacity: 1; transform: translateY(0); }
 }
-
+ 
 .card h2, .card h3 {
     margin-top: 0 !important;
     color: var(--ink-0) !important;
 }
-
+ 
 /* =========================
    INPUTS / TEXTAREA / FILE
 ========================= */
@@ -517,7 +525,7 @@ label > span,
     margin-bottom: 8px !important;
     display: inline-block;
 }
-
+ 
 textarea,
 input[type="text"],
 input[type="email"],
@@ -532,17 +540,17 @@ input[type="number"],
     transition: all 0.25s ease !important;
     font-family: 'Inter', sans-serif !important;
 }
-
+ 
 textarea {
     padding: 14px 16px !important;
     line-height: 1.6 !important;
 }
-
+ 
 textarea::placeholder,
 input::placeholder {
     color: var(--ink-4) !important;
 }
-
+ 
 textarea:focus,
 input:focus {
     border-color: var(--brand-1) !important;
@@ -551,7 +559,7 @@ input:focus {
                 0 0 20px rgba(99, 102, 241, 0.1) !important;
     outline: none !important;
 }
-
+ 
 /* File upload */
 .gr-file,
 [data-testid="file"] {
@@ -561,18 +569,18 @@ input:focus {
     transition: all 0.3s ease !important;
     padding: 20px !important;
 }
-
+ 
 .gr-file:hover,
 [data-testid="file"]:hover {
     border-color: var(--brand-1) !important;
     background: rgba(99, 102, 241, 0.05) !important;
     transform: scale(1.005);
 }
-
+ 
 [data-testid="file"] * {
     color: var(--ink-2) !important;
 }
-
+ 
 /* =========================
    BUTTON ANALYZE
 ========================= */
@@ -594,7 +602,7 @@ input:focus {
     overflow: hidden;
     margin: 8px 0 20px 0 !important;
 }
-
+ 
 .analyze-button::before {
     content: "";
     position: absolute;
@@ -603,22 +611,22 @@ input:focus {
     transform: translateX(-100%);
     transition: transform 0.6s ease;
 }
-
+ 
 .analyze-button:hover {
     transform: translateY(-3px);
     background-position: 100% 50% !important;
     box-shadow: 0 16px 40px rgba(99, 102, 241, 0.5),
                 inset 0 1px 0 rgba(255,255,255,0.3) !important;
 }
-
+ 
 .analyze-button:hover::before {
     transform: translateX(100%);
 }
-
+ 
 .analyze-button:active {
     transform: translateY(-1px) scale(0.99);
 }
-
+ 
 /* =========================
    SECTION TITLE
 ========================= */
@@ -632,7 +640,7 @@ input:focus {
     color: var(--ink-0);
     font-family: 'Plus Jakarta Sans', sans-serif;
 }
-
+ 
 .section-title .bar {
     width: 5px;
     height: 28px;
@@ -642,12 +650,12 @@ input:focus {
     box-shadow: 0 0 16px rgba(99, 102, 241, 0.6);
     animation: barPulse 2s ease-in-out infinite;
 }
-
+ 
 @keyframes barPulse {
     0%, 100% { box-shadow: 0 0 16px rgba(99, 102, 241, 0.6); }
     50% { box-shadow: 0 0 28px rgba(139, 92, 246, 0.9); }
 }
-
+ 
 /* =========================
    SCORE RING
 ========================= */
@@ -663,7 +671,7 @@ input:focus {
     position: relative;
     overflow: hidden;
 }
-
+ 
 .score-card::before {
     content: "";
     position: absolute;
@@ -675,11 +683,11 @@ input:focus {
     animation: rotateBg 8s linear infinite;
     pointer-events: none;
 }
-
+ 
 @keyframes rotateBg {
     to { transform: rotate(360deg); }
 }
-
+ 
 .score-ring-wrap {
     display: flex;
     flex-direction: column;
@@ -689,7 +697,7 @@ input:focus {
     z-index: 1;
     animation: popIn 0.6s cubic-bezier(0.16, 1, 0.3, 1);
 }
-
+ 
 .score-ring {
     width: 180px;
     height: 180px;
@@ -703,7 +711,7 @@ input:focus {
     transition: background 0.8s cubic-bezier(0.16, 1, 0.3, 1);
     position: relative;
 }
-
+ 
 .score-ring::after {
     content: "";
     position: absolute;
@@ -714,7 +722,7 @@ input:focus {
     opacity: 0.4;
     z-index: -1;
 }
-
+ 
 .score-ring-inner {
     width: 140px;
     height: 140px;
@@ -726,7 +734,7 @@ input:focus {
     box-shadow: inset 0 4px 12px rgba(0, 0, 0, 0.6);
     border: 1px solid rgba(255,255,255,0.05);
 }
-
+ 
 .score-number {
     font-size: 38px;
     font-weight: 800;
@@ -735,7 +743,7 @@ input:focus {
     letter-spacing: -0.02em;
     text-shadow: 0 2px 12px rgba(99,102,241,0.5);
 }
-
+ 
 .score-status {
     font-size: 17px;
     font-weight: 700;
@@ -743,21 +751,21 @@ input:focus {
     color: var(--ink-0);
     font-family: 'Plus Jakarta Sans', sans-serif;
 }
-
+ 
 .score-caption {
     font-size: 13px;
     color: var(--ink-3);
     margin: 0;
     text-align: center;
 }
-
+ 
 @keyframes popIn {
     from { opacity: 0; transform: scale(0.8); }
     to { opacity: 1; transform: scale(1); }
 }
-
+ 
 /* =========================
-   INFO ROWS (CANDIDAT)
+   INFO ROWS (CANDIDATE)
 ========================= */
 .info-row {
     display: flex;
@@ -770,13 +778,13 @@ input:focus {
     margin-bottom: 10px;
     transition: all 0.3s ease;
 }
-
+ 
 .info-row:hover {
     background: rgba(99, 102, 241, 0.06);
     border-color: rgba(99, 102, 241, 0.3);
     transform: translateX(4px);
 }
-
+ 
 .info-icon {
     width: 40px;
     height: 40px;
@@ -789,7 +797,7 @@ input:focus {
     border-radius: 12px;
     font-size: 18px;
 }
-
+ 
 .info-content {
     display: flex;
     flex-direction: column;
@@ -797,7 +805,7 @@ input:focus {
     min-width: 0;
     flex: 1;
 }
-
+ 
 .info-label {
     font-size: 11px;
     text-transform: uppercase;
@@ -805,14 +813,14 @@ input:focus {
     color: var(--ink-3);
     font-weight: 600;
 }
-
+ 
 .info-value {
     font-size: 14.5px;
     color: var(--ink-0);
     font-weight: 500;
     word-break: break-word;
 }
-
+ 
 /* =========================
    RESULT LISTS (Markdown)
 ========================= */
@@ -821,7 +829,7 @@ input:focus {
     list-style: none !important;
     margin: 0 !important;
 }
-
+ 
 .card li {
     padding: 10px 14px;
     font-size: 14.5px;
@@ -833,17 +841,17 @@ input:focus {
     transition: all 0.25s ease;
     line-height: 1.5;
 }
-
+ 
 .card li:hover {
     background: rgba(99, 102, 241, 0.06);
     border-color: rgba(99, 102, 241, 0.3);
     transform: translateX(4px);
 }
-
+ 
 .card li:last-child {
     margin-bottom: 0;
 }
-
+ 
 /* =========================
    STATUS BANNER
 ========================= */
@@ -857,13 +865,13 @@ input:focus {
     min-height: 0;
     transition: all 0.3s ease;
 }
-
+ 
 #status-banner:not(:empty) {
     background: rgba(239, 68, 68, 0.08);
     border: 1px solid rgba(239, 68, 68, 0.25);
     color: #fca5a5;
 }
-
+ 
 /* =========================
    FOOTER
 ========================= */
@@ -876,7 +884,7 @@ input:focus {
     border-top: 1px solid var(--border-1);
     line-height: 1.8;
 }
-
+ 
 .footer b {
     color: var(--ink-1);
     font-weight: 700;
@@ -885,7 +893,7 @@ input:focus {
     background-clip: text;
     -webkit-text-fill-color: transparent;
 }
-
+ 
 /* =========================
    SCROLLBAR
 ========================= */
@@ -893,21 +901,21 @@ input:focus {
     width: 10px;
     height: 10px;
 }
-
+ 
 ::-webkit-scrollbar-track {
     background: var(--bg-1);
 }
-
+ 
 ::-webkit-scrollbar-thumb {
     background: linear-gradient(180deg, var(--brand-1), var(--brand-2));
     border-radius: 10px;
     border: 2px solid var(--bg-1);
 }
-
+ 
 ::-webkit-scrollbar-thumb:hover {
     background: linear-gradient(180deg, var(--brand-2), var(--brand-4));
 }
-
+ 
 /* =========================
    RESPONSIVE
 ========================= */
@@ -945,8 +953,8 @@ input:focus {
     }
 }
 """
-
-
+ 
+ 
 FORCE_DARK_JS = """
 function forceDark() {
     const url = new URL(window.location);
@@ -956,12 +964,12 @@ function forceDark() {
     }
 }
 """
-
-
+ 
+ 
 # =========================================================
-# THEME GRADIO
+# GRADIO THEME
 # =========================================================
-
+ 
 THEME = gr.themes.Soft(
     primary_hue=gr.themes.colors.indigo,
     secondary_hue=gr.themes.colors.violet,
@@ -994,172 +1002,172 @@ THEME = gr.themes.Soft(
     button_primary_text_color="#ffffff",
     button_primary_text_color_dark="#ffffff",
 )
-
-
+ 
+ 
 with gr.Blocks(
     title="SmartCV AI",
     theme=THEME,
     css=CSS,
     js=FORCE_DARK_JS
 ) as demo:
-
+ 
     # =========================
     # HEADER
     # =========================
-
+ 
     gr.HTML(
         """
         <div class="hero">
-            <span class="hero-badge">✨ Analyse propulsée par l'IA</span>
+            <span class="hero-badge">✨ AI-Powered Analysis</span>
             <h1>🤖 SmartCV AI</h1>
             <p>
-                Analysez votre CV avec l'intelligence artificielle
-                et découvrez instantanément sa compatibilité avec
-                une offre d'emploi, avec des recommandations
-                personnalisées pour maximiser vos chances.
+                Analyze your resume with artificial intelligence
+                and instantly discover how well it matches a job
+                description, with personalized recommendations to
+                maximize your chances.
             </p>
         </div>
         """
     )
-
+ 
     # =========================
     # INPUT SECTION
     # =========================
-
+ 
     with gr.Row(equal_height=True):
-
+ 
         with gr.Column(
             scale=1,
             elem_classes="card"
         ):
-
+ 
             gr.Markdown(
                 """
-                ## 📄 Votre CV
-
-                Importez votre CV au format PDF.
+                ## 📄 Your Resume
+ 
+                Upload your resume as a PDF file.
                 """
             )
-
+ 
             cv_input = gr.File(
-                label="CV au format PDF",
+                label="Resume (PDF)",
                 file_types=[".pdf"],
                 type="filepath"
             )
-
+ 
         with gr.Column(
             scale=1,
             elem_classes="card"
         ):
-
+ 
             gr.Markdown(
                 """
-                ## 💼 Offre d'emploi
-
-                Collez ici la description du poste.
+                ## 💼 Job Description
+ 
+                Paste the job description here.
                 """
             )
-
+ 
             job_input = gr.Textbox(
-                label="Description du poste",
+                label="Job Description",
                 placeholder=(
-                    "Exemple :\n\n"
-                    "Nous recherchons un développeur Python "
-                    "avec des compétences en FastAPI, Docker, "
-                    "PostgreSQL et Git..."
+                    "Example:\n\n"
+                    "We are looking for a Python developer "
+                    "with skills in FastAPI, Docker, "
+                    "PostgreSQL and Git..."
                 ),
                 lines=10
             )
-
+ 
     analyze_button = gr.Button(
-        "🚀 Analyser mon CV",
+        "🚀 Analyze My Resume",
         variant="primary",
         elem_classes="analyze-button"
     )
-
+ 
     status = gr.Markdown(
         "",
         elem_id="status-banner"
     )
-
+ 
     # =========================
     # RESULTS
     # =========================
-
+ 
     gr.HTML(
         """
         <div class="section-title">
-            <span class="bar"></span> Résultats de l'analyse
+            <span class="bar"></span> Analysis Results
         </div>
         """
     )
-
+ 
     with gr.Row(equal_height=True):
-
+ 
         with gr.Column(
             scale=1,
             elem_classes="card"
         ):
-
+ 
             candidate_output = gr.HTML(
-                "<p style='color:#7a8298;'>Les informations du candidat apparaîtront ici.</p>"
+                "<p style='color:#7a8298;'>Candidate information will appear here.</p>"
             )
-
+ 
         with gr.Column(
             scale=1,
             elem_classes="score-card"
         ):
-
+ 
             score_output = gr.HTML(
-                "<p style='color:#7a8298;'>En attente d'analyse…</p>"
+                "<p style='color:#7a8298;'>Waiting for analysis…</p>"
             )
-
+ 
     with gr.Row(equal_height=True):
-
+ 
         with gr.Column(
             elem_classes="card"
         ):
-
+ 
             matched_output = gr.Markdown(
-                "Les compétences correspondantes apparaîtront ici."
+                "Matching skills will appear here."
             )
-
+ 
         with gr.Column(
             elem_classes="card"
         ):
-
+ 
             missing_output = gr.Markdown(
-                "Les compétences manquantes apparaîtront ici."
+                "Missing skills will appear here."
             )
-
+ 
     with gr.Row():
-
+ 
         with gr.Column(
             elem_classes="card"
         ):
-
+ 
             recommendations_output = gr.Markdown(
-                "Les recommandations apparaîtront ici."
+                "Recommendations will appear here."
             )
-
+ 
     # =========================
     # FOOTER
     # =========================
-
+ 
     gr.HTML(
         """
         <div class="footer">
-            <b>SmartCV AI</b> · Analyse intelligente de CV
+            <b>SmartCV AI</b> · Smart Resume Analysis
             <br>
             Powered by FastAPI · Sentence Transformers · Gradio
         </div>
         """
     )
-
+ 
     # =========================
     # EVENT
     # =========================
-
+ 
     analyze_button.click(
         fn=analyze_cv,
         inputs=[
@@ -1175,10 +1183,11 @@ with gr.Blocks(
             status
         ]
     )
-
-
+ 
+ 
 if __name__ == "__main__":
     demo.launch(
-        server_name="127.0.0.1",
+        server_name="0.0.0.0",
         server_port=7860
     )
+ 

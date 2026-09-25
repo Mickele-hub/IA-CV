@@ -19,7 +19,6 @@
     "MATLAB",
     "Perl"
   ],
-
   "web": [
     "HTML",
     "CSS",
@@ -43,7 +42,6 @@
     "Symfony",
     "Spring Boot"
   ],
-
   "database": [
     "MySQL",
     "PostgreSQL",
@@ -59,7 +57,6 @@
     "Firebase",
     "Supabase"
   ],
-
   "devops": [
     "Git",
     "GitHub",
@@ -78,7 +75,6 @@
     "Prometheus",
     "Grafana"
   ],
-
   "cloud": [
     "AWS",
     "Amazon Web Services",
@@ -92,7 +88,6 @@
     "Lambda",
     "CloudFormation"
   ],
-
   "cybersecurity": [
     "Cybersecurity",
     "Network Security",
@@ -113,7 +108,6 @@
     "Snort",
     "Suricata"
   ],
-
   "network": [
     "TCP/IP",
     "DNS",
@@ -135,7 +129,6 @@
     "IPv4",
     "IPv6"
   ],
-
   "operating_systems": [
     "Linux",
     "Ubuntu",
@@ -148,7 +141,6 @@
     "FreeBSD",
     "macOS"
   ],
-
   "data_ai": [
     "Artificial Intelligence",
     "Machine Learning",
@@ -166,7 +158,6 @@
     "OpenCV",
     "Hugging Face"
   ],
-
   "mobile": [
     "Android",
     "Android Studio",
@@ -178,7 +169,6 @@
     "React Native",
     "Dart"
   ],
-
   "software_engineering": [
     "REST API",
     "GraphQL",
@@ -193,7 +183,6 @@
     "Scrum",
     "UML"
   ],
-
   "tools": [
     "VS Code",
     "Visual Studio",
@@ -203,5 +192,119 @@
     "Trello",
     "Figma",
     "Slack"
+  ],
+  "marketing": [
+    "Digital Marketing",
+    "Social Media Marketing",
+    "Content Marketing",
+    "Email Marketing",
+    "SEO",
+    "SEM",
+    "Google Ads",
+    "Google Analytics",
+    "Facebook Ads",
+    "Marketing Strategy",
+    "Brand Management",
+    "Brand Consistency",
+    "Market Research",
+    "Copywriting",
+    "Campaign Management",
+    "Public Relations",
+    "PR",
+    "CRM",
+    "HubSpot",
+    "Mailchimp"
+  ],
+  "design": [
+    "Graphic Design",
+    "UI Design",
+    "UX Design",
+    "UI/UX",
+    "Web Design",
+    "Product Design",
+    "Interior Design",
+    "Design Thinking",
+    "Wireframing",
+    "Wireframe Creation",
+    "Prototyping",
+    "User Research",
+    "Design Process",
+    "Figma",
+    "Adobe Photoshop",
+    "Adobe Illustrator",
+    "Adobe XD",
+    "Sketch",
+    "Canva",
+    "3D Modeling",
+    "AutoCAD",
+    "SketchUp"
+  ],
+  "project_management": [
+    "Project Management",
+    "Program Management",
+    "Project Planning",
+    "Budget Management",
+    "Risk Management",
+    "Resource Management",
+    "Stakeholder Management",
+    "Project Management Tools",
+    "Kanban",
+    "Waterfall",
+    "PMP",
+    "PRINCE2",
+    "Gantt Chart",
+    "Time Management"
+  ],
+  "business_communication": [
+    "Communication",
+    "Strong Communication",
+    "Public Speaking",
+    "Negotiation",
+    "Presentation Skills",
+    "Team Leadership",
+    "Leadership",
+    "Team Management",
+    "Mentoring",
+    "Coaching",
+    "Conflict Resolution",
+    "Critical Thinking",
+    "Problem-Solving",
+    "Decision Making"
+  ],
+  "sales": [
+    "Sales",
+    "Business Development",
+    "Account Management",
+    "Lead Generation",
+    "Sales Strategy",
+    "Cold Calling",
+    "Client Relationship Management",
+    "Negotiation",
+    "Salesforce"
+  ],
+  "finance_accounting": [
+    "Financial Analysis",
+    "Accounting",
+    "Bookkeeping",
+    "Budgeting",
+    "Forecasting",
+    "Financial Reporting",
+    "QuickBooks",
+    "Excel",
+    "Microsoft Excel",
+    "Financial Modeling",
+    "Auditing",
+    "Tax Preparation"
+  ],
+  "human_resources": [
+    "Recruitment",
+    "Talent Acquisition",
+    "Onboarding",
+    "Employee Relations",
+    "Performance Management",
+    "HR Policies",
+    "Payroll",
+    "Training and Development",
+    "Human Resources"
   ]
 }

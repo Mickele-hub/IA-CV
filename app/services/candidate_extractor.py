@@ -1,278 +1,274 @@
 import re
-
-
+ 
+ 
 def extract_email(text: str) -> str | None:
     """
-    Extrait la première adresse email trouvée.
+    Extracts the first email address found.
     """
-
+ 
     pattern = r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b"
-
+ 
     match = re.search(pattern, text)
-
+ 
     if match:
         return match.group(0)
-
+ 
     return None
-
-
+ 
+ 
 def extract_phone(text: str) -> str | None:
     """
-    Extrait un numéro de téléphone en évitant les années
-    et les périodes comme '2024 - 2023'.
+    Extracts a phone number while avoiding years and date
+    ranges like '2024 - 2023'.
     """
-
+ 
     patterns = [
-        # Numéros internationaux :
-        # +261 34 12 345 67
-        # +33 6 12 34 56 78
+        # International numbers:
+        # +1 415 555 0132
+        # +44 20 7946 0958
         r"\+\d{1,3}[\s.-]?(?:\d[\s.-]?){7,12}",
-
-        # Numéros avec préfixe local :
-        # 034 12 345 67
-        # 032 12 345 67
+ 
+        # Local numbers with a leading 0:
+        # 020 7946 0958
         r"\b0\d{2}[\s.-]?(?:\d[\s.-]?){6,9}\b",
-
-        # Format générique type 123-456-7890 ou 123.456.7890
+ 
+        # Generic format like 123-456-7890 or 123.456.7890
         r"\b\d{3}[\s.-]\d{3}[\s.-]\d{4}\b"
     ]
-
+ 
     for pattern in patterns:
         matches = re.findall(pattern, text)
-
+ 
         for match in matches:
-
-            # Nettoyage
+ 
+            # Cleanup
             phone = re.sub(r"\s+", " ", match).strip()
-
-            # Compter uniquement les chiffres
+ 
+            # Count digits only
             digits = re.sub(r"\D", "", phone)
-
-            # Un vrai téléphone doit généralement avoir
-            # au moins 9 chiffres.
+ 
+            # A real phone number generally has at least
+            # 9 digits.
             if len(digits) >= 9:
-
-                # Éviter les années/périodes
+ 
+                # Avoid years/date ranges
                 if re.fullmatch(r"\d{4}\s*[-–]\s*\d{4}", phone):
                     continue
-
+ 
                 return phone
-
+ 
     return None
-
-
+ 
+ 
 def extract_name(text: str) -> str | None:
     """
-    Tente d'extraire le nom du candidat.
-
-    Cette fonction cherche d'abord les lignes contenant
-    des indicateurs comme 'Nom', 'Name', etc.
-
-    Si aucun indicateur n'est trouvé, elle utilise une
-    heuristique sur les premières lignes du CV.
+    Attempts to extract the candidate's name.
+ 
+    This function first looks for lines containing explicit
+    indicators like 'Name', 'Full Name', etc.
+ 
+    If no indicator is found, it falls back to a heuristic
+    based on the first lines of the resume.
     """
-
+ 
     lines = [
         line.strip()
         for line in text.splitlines()
         if line.strip()
     ]
-
+ 
     # --------------------------------------------------
-    # 1. Recherche explicite
+    # 1. Explicit search
     # --------------------------------------------------
-
+ 
     name_patterns = [
-        r"^(?:nom|name|full name)\s*[:\-]\s*(.+)$",
-        r"^(?:nom complet)\s*[:\-]\s*(.+)$"
+        r"^(?:name|full name)\s*[:\-]\s*(.+)$",
     ]
-
+ 
     for line in lines[:30]:
-
+ 
         for pattern in name_patterns:
-
+ 
             match = re.search(
                 pattern,
                 line,
                 re.IGNORECASE
             )
-
+ 
             if match:
                 name = match.group(1).strip()
-
+ 
                 if is_valid_name(name):
                     return name
-
+ 
     # --------------------------------------------------
-    # 2. Heuristique sur les premières lignes
+    # 2. Heuristic on the first lines
     # --------------------------------------------------
-
+ 
     ignored_keywords = [
         "curriculum",
         "curriculum vitae",
         "resume",
         "cv",
-        "profil",
         "profile",
-        "compétence",
-        "competence",
-        "compétences",
-        "competences",
-        "formation",
-        "education",
-        "expérience",
-        "experience",
-        "développement",
-        "developpement",
-        "développement mobile",
-        "developpement mobile",
-        "développement web",
-        "developpement web",
-        "contact",
-        "objectif",
+        "summary",
+        "professional summary",
+        "about me",
+        "objective",
+        "career objective",
         "skills",
+        "technical skills",
+        "education",
+        "experience",
+        "work experience",
+        "professional experience",
+        "employment history",
+        "software development",
+        "web development",
+        "mobile development",
+        "contact",
+        "contact information",
         "languages",
-        "langues",
-        "projets",
-        "projects"
+        "projects",
+        "certifications",
+        "achievements",
+        "references",
+        "interests",
+        "hobbies"
     ]
-
+ 
     candidates = []
-
+ 
     window = lines[:20]
     i = 0
-
+ 
     while i < len(window):
-
+ 
         line = window[i]
-
-        # Ignorer les lignes contenant des emails
+ 
+        # Skip lines containing an email
         if "@" in line:
             i += 1
             continue
-
-        # Ignorer les lignes contenant des chiffres
+ 
+        # Skip lines containing digits
         if re.search(r"\d", line):
             i += 1
             continue
-
-        # Ignorer les lignes trop longues
+ 
+        # Skip lines that are too long
         if len(line) > 50:
             i += 1
             continue
-
+ 
         normalized = line.lower().strip()
-
-        # Ignorer les titres connus
+ 
+        # Skip known section titles
         if normalized in ignored_keywords:
             i += 1
             continue
-
-        # Ignorer les lignes contenant des mots-clés
+ 
+        # Skip lines containing keywords
         if any(
             keyword in normalized
             for keyword in ignored_keywords
         ):
             i += 1
             continue
-
+ 
         words = line.split()
-
-        # Cas normal : la ligne contient déjà 2 à 4 mots
+ 
+        # Normal case: the line already has 2 to 4 words
         if 2 <= len(words) <= 4:
-
+ 
             if is_valid_name(line):
                 candidates.append(line)
                 break
-
-        # Cas d'un nom éclaté sur deux lignes distinctes
-        # (ex: "Andréa" sur une ligne, "Sanchez" sur la
-        # suivante, à cause de la mise en page du CV)
+ 
+        # Case where the name is split across two lines
+        # (e.g. "Andrea" on one line, "Sanchez" on the
+        # next, due to the resume's layout)
         elif len(words) == 1 and i + 1 < len(window):
-
+ 
             next_line = window[i + 1]
             merged = f"{line} {next_line}"
-
+ 
             if is_valid_name(merged):
                 candidates.append(merged)
                 break
-
+ 
         i += 1
-
+ 
     if candidates:
         return candidates[0]
-
+ 
     return None
-
-
+ 
+ 
 def is_valid_name(name: str) -> bool:
     """
-    Vérifie si une chaîne peut raisonnablement représenter
-    un nom de personne.
+    Checks whether a string can reasonably represent a
+    person's name.
     """
-
+ 
     if not name:
         return False
-
+ 
     if len(name) < 3 or len(name) > 60:
         return False
-
-    # Aucun chiffre
+ 
+    # No digits
     if re.search(r"\d", name):
         return False
-
-    # Aucun email
+ 
+    # No email
     if "@" in name:
         return False
-
+ 
     words = name.split()
-
+ 
     if not 2 <= len(words) <= 4:
         return False
-
-    # Liste de mots qui ne sont normalement pas des noms
+ 
+    # Words that are normally not part of a person's name
     forbidden = {
-        "développement",
-        "developpement",
-        "mobile",
-        "web",
         "software",
+        "web",
+        "mobile",
         "developer",
-        "développeur",
-        "développeuse",
+        "development",
         "engineer",
         "engineering",
         "curriculum",
         "vitae",
-        "profil",
         "profile",
-        "formation",
+        "summary",
+        "objective",
         "education",
-        "expérience",
         "experience",
-        "compétences",
-        "competences",
         "skills",
         "contact",
-        "projets",
-        "projects"
+        "projects",
+        "certifications",
+        "references"
     }
-
+ 
     for word in words:
-
+ 
         if word.lower().strip(".,:;-") in forbidden:
             return False
-
+ 
     return True
-
-
+ 
+ 
 def extract_candidate_info(text: str) -> dict:
     """
-    Extrait les informations principales du candidat.
+    Extracts the candidate's main information.
     """
-
+ 
     return {
         "name": extract_name(text),
         "email": extract_email(text),
         "phone": extract_phone(text)
     }
+ 

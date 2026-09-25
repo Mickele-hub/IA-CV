@@ -1,0 +1,26 @@
+services:
+  backend:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      # Le modèle fine-tuné reste sur ta machine (pas dans
+      # l'image) — pratique pour le remplacer par une nouvelle
+      # version après un réentraînement sans reconstruire l'image.
+      - ./models:/app/models:ro
+ 
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    ports:
+      - "7860:7860"
+    environment:
+      # Le frontend doit appeler le backend par son nom de
+      # service Docker, pas localhost (chaque conteneur a son
+      # propre réseau) — voir la note sous ce fichier pour
+      # adapter gradio_app.py en conséquence.
+      - API_URL=http://backend:8000/analyze
+    depends_on:
+      - backend
+ 

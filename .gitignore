@@ -1,0 +1,132 @@
+voilà pour Harper Russo : curl -X 'POST' \
+  'http://localhost:8000/analyze' \
+  -H 'accept: */*' \
+  -H 'Content-Type: multipart/form-data' \
+  -F 'cv=@Black and White Simple CV Resume.pdf;type=application/pdf' \
+  -F 'job_description=We are looking for a web developer with experience in front-end coding, database administration and website design. Strong problem-solving skills required.'
+Request URL
+http://localhost:8000/analyze
+Server response
+Code	Details
+200	
+Response body
+Download
+{
+  "candidate": {
+    "name": "Harper Russo",
+    "email": "hello@reallygreatsite.com",
+    "phone": "+123-456-7890"
+  },
+  "skills": [],
+  "job_skills": [],
+  "matched_skills": [],
+  "missing_skills": [],
+  "match_score": 65,
+  "recommendations": [
+    "The resume shows a strong semantic match with the job posting."
+  ]
+}
+curl -X 'POST' \
+  'http://localhost:8000/analyze' \
+  -H 'accept: */*' \
+  -H 'Content-Type: multipart/form-data' \
+  -F 'cv=@Black and White Simple CV Resume.pdf;type=application/pdf' \
+  -F 'job_description=We are looking for a marketing manager to develop and execute marketing strategies, manage a team, and monitor brand consistency across channels.'
+Request URL
+http://localhost:8000/analyze
+Server response
+Code	Details
+200	
+Response body
+Download
+{
+  "candidate": {
+    "name": "Harper Russo",
+    "email": "hello@reallygreatsite.com",
+    "phone": "+123-456-7890"
+  },
+  "skills": [],
+  "job_skills": [],
+  "matched_skills": [],
+  "missing_skills": [],
+  "match_score": 15,
+  "recommendations": [
+    "The resume shows a partial match. Strengthen the sections directly related to this role."
+  ]
+}
+Pour Richard Sanchez (Marketing Manager) :curl -X 'POST' \
+  'http://localhost:8000/analyze' \
+  -H 'accept: */*' \
+  -H 'Content-Type: multipart/form-data' \
+  -F 'cv=@Blue and Gray Simple Professional CV Resume.pdf;type=application/pdf' \
+  -F 'job_description=We are looking for a marketing manager to develop and execute marketing strategies, manage a team, and monitor brand consistency across channels.'
+Request URL
+http://localhost:8000/analyze
+Server response
+Code	Details
+200	
+Response body
+Download
+{
+  "candidate": {
+    "name": "RICHARD SANCHEZ",
+    "email": "hello@reallygreatsite.com",
+    "phone": "+123-456-7890"
+  },
+  "skills": [],
+  "job_skills": [],
+  "matched_skills": [],
+  "missing_skills": [],
+  "match_score": 37,
+  "recommendations": [
+    "The resume shows a strong semantic match with the job posting."
+  ]
+}
+Richard Sanchez(Product Designer) : curl -X 'POST' \
+  'http://localhost:8000/analyze' \
+  -H 'accept: */*' \
+  -H 'Content-Type: multipart/form-data' \
+  -F 'cv=@Black Modern Professional Resume.pdf;type=application/pdf' \
+  -F 'job_description=We are looking for a product designer with strong skills in design process, creativity and project management'
+Request URL
+http://localhost:8000/analyze
+Server response
+Code	Details
+200	
+Response body
+Download
+{
+  "candidate": {
+    "name": "RICHARD SANCHEZ Product Designer",
+    "email": "hello@reallygreatsite.com",
+    "phone": "+123-456-7890"
+  },
+  "skills": [],
+  "job_skills": [],
+  "matched_skills": [],
+  "missing_skills": [],
+  "match_score": 53,
+  "recommendations": [
+    "The resume shows a strong semantic match with the job posting."
+  ]
+}
+resultat de evaluate_score : (venv) PS C:\Users\andri_c\Desktop\IA\CV-AI> python scripts/evaluate_score.py                                                                        
+warning: The `fitz` API is deprecated and will be removed in future. Use `import pymupdf` instead.
+Loading weights: 100%|██████████████████████████████████████████████████████████████████████████████████████████| 199/199 [00:00<00:00, 4037.75it/s]
+
+=== Résultats ===
+
+ 64 | bon match       | Harper Russo (web dev) vs offre web dev — bon match
+ 53 | bon match       | Richard Sanchez (product designer) vs offre product design — bon match
+ 36 | bon match       | Richard Sanchez (marketing manager) vs offre marketing — bon match
+ 23 | mauvais match   | Richard Sanchez (product designer) vs offre marketing — mauvais match
+ 17 | mauvais match   | Richard Sanchez (marketing manager) vs offre product design — mauvais match
+ 15 | mauvais match   | Harper Russo (web dev) vs offre marketing — mauvais match
+
+=== Résumé ===
+Bons matchs   : min=36, max=64, moyenne=51.0
+Mauvais matchs: min=15, max=23, moyenne=18.3
+
+➡️  Choisis un seuil 'bonne correspondance' situé entre le max des mauvais matchs et le min des bons matchs (avec de la marge des deux côtés).
+(venv) PS C:\Users\andri_c\Desktop\IA\CV-AI> 
+
