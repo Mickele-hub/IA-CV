@@ -23,6 +23,25 @@ def load_skills() -> list[str]:
     return skills
 
 
+def normalize_apostrophes(text: str) -> str:
+    """
+    Uniformise les différents types d'apostrophes (typographique
+    ’, courbe ‘, etc.) vers une apostrophe simple '.
+
+    Les CV copiés depuis Word/Google Docs utilisent souvent
+    l'apostrophe typographique (’), ce qui empêchait de détecter
+    des compétences comme "travail d'équipe" écrites avec une
+    apostrophe différente de celle stockée dans skills.json.
+    """
+
+    return (
+        text
+        .replace("’", "'")
+        .replace("‘", "'")
+        .replace("`", "'")
+    )
+
+
 def extract_skills(text: str) -> list[str]:
     """
     Recherche les compétences connues dans un texte.
@@ -33,11 +52,13 @@ def extract_skills(text: str) -> list[str]:
 
     found_skills = []
 
-    text_lower = text.lower()
+    text_lower = normalize_apostrophes(text.lower())
 
     for skill in load_skills():
 
-        pattern = r"\b" + re.escape(skill.lower()) + r"\b"
+        skill_normalized = normalize_apostrophes(skill.lower())
+
+        pattern = r"\b" + re.escape(skill_normalized) + r"\b"
 
         if re.search(pattern, text_lower):
             found_skills.append(skill)
