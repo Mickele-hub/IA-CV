@@ -43,7 +43,8 @@ def analyze_cv(pdf_file, job_description: str) -> dict:
     recommendations = generate_recommendations(
         matched_skills,
         missing_skills,
-        match_score
+        match_score,
+        job_skills
     )
 
     # 8. Résultat final
@@ -61,10 +62,19 @@ def analyze_cv(pdf_file, job_description: str) -> dict:
 def generate_recommendations(
     matched_skills: list[str],
     missing_skills: list[str],
-    match_score: int
+    match_score: int,
+    job_skills: list[str]
 ) -> list[str]:
 
     recommendations = []
+
+    if not job_skills:
+        recommendations.append(
+            "Aucune compétence connue n'a été reconnue dans "
+            "l'offre d'emploi. Le référentiel actuel ne couvre "
+            "peut-être pas ce secteur, et le score de "
+            "compatibilité peut donc être moins fiable ici."
+        )
 
     if missing_skills:
         recommendations.append(
