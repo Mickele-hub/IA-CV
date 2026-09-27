@@ -4,14 +4,40 @@ import re
 def extract_email(text: str) -> str | None:
     """
     Extrait la première adresse email trouvée.
+
+    Essaie d'abord une recherche directe (couvre la majorité
+    des cas). Si l'email est coupé par un retour à la ligne
+    forcé par une mise en page étroite, tente de le
+    reconstituer en fusionnant uniquement avec le premier mot
+    de la ligne suivante, pour éviter d'avaler du texte
+    d'une autre phrase à proximité.
     """
 
-    pattern = r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b"
+    email_pattern = r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b"
 
-    match = re.search(pattern, text)
+    match = re.search(email_pattern, text)
 
     if match:
         return match.group(0)
+
+    lines = text.splitlines()
+
+    for i, line in enumerate(lines):
+
+        if "@" not in line:
+            continue
+
+        fragment = line.strip()
+
+        if i + 1 < len(lines):
+            next_words = lines[i + 1].strip().split()
+
+            if next_words:
+                merged = fragment + next_words[0]
+                merged_match = re.search(email_pattern, merged)
+
+                if merged_match:
+                    return merged_match.group(0)
 
     return None
 
@@ -178,11 +204,30 @@ def extract_name(text: str) -> str | None:
 
         words = line.split()
 
-        # Cas normal : la ligne contient déjà 2 à 4 mots
+                # Cas normal : la ligne contient déjà 2 à 4 mots
         if 2 <= len(words) <= 4:
 
             if is_valid_name(line):
-                candidates.append(line)
+
+                merged_name = line
+
+                # Vérifie si la ligne suivante complète le nom
+                # (ex: prénom sur une 2e ligne à cause de la
+                # mise en page).
+                if i + 1 < len(window):
+                    next_line = window[i + 1]
+                    next_words = next_line.split()
+
+                    if (
+                        1 <= len(next_words) <= 2
+                        and not re.search(r"\d", next_line)
+                        and "@" not in next_line
+                        and len(next_line) <= 30
+                        and next_line[:1].isupper()
+                    ):
+                        merged_name = f"{line} {next_line}"
+
+                candidates.append(merged_name)
                 break
 
         # Cas d'un nom éclaté sur deux lignes distinctes
