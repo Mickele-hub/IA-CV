@@ -19,7 +19,6 @@
     "MATLAB",
     "Perl"
   ],
-
   "web": [
     "HTML",
     "CSS",
@@ -43,7 +42,6 @@
     "Symfony",
     "Spring Boot"
   ],
-
   "database": [
     "MySQL",
     "PostgreSQL",
@@ -59,7 +57,6 @@
     "Firebase",
     "Supabase"
   ],
-
   "devops": [
     "Git",
     "GitHub",
@@ -78,7 +75,6 @@
     "Prometheus",
     "Grafana"
   ],
-
   "cloud": [
     "AWS",
     "Amazon Web Services",
@@ -92,7 +88,6 @@
     "Lambda",
     "CloudFormation"
   ],
-
   "cybersecurity": [
     "Cybersecurity",
     "Network Security",
@@ -113,7 +108,6 @@
     "Snort",
     "Suricata"
   ],
-
   "network": [
     "TCP/IP",
     "DNS",
@@ -135,7 +129,6 @@
     "IPv4",
     "IPv6"
   ],
-
   "operating_systems": [
     "Linux",
     "Ubuntu",
@@ -148,7 +141,6 @@
     "FreeBSD",
     "macOS"
   ],
-
   "data_ai": [
     "Artificial Intelligence",
     "Machine Learning",
@@ -166,7 +158,6 @@
     "OpenCV",
     "Hugging Face"
   ],
-
   "mobile": [
     "Android",
     "Android Studio",
@@ -178,7 +169,6 @@
     "React Native",
     "Dart"
   ],
-
   "software_engineering": [
     "REST API",
     "GraphQL",
@@ -193,7 +183,6 @@
     "Scrum",
     "UML"
   ],
-
   "tools": [
     "VS Code",
     "Visual Studio",
@@ -203,5 +192,49 @@
     "Trello",
     "Figma",
     "Slack"
+  ],
+  "soft_skills": [
+    "Communication",
+    "Communication écrite",
+    "Communication orale",
+    "Écoute active",
+    "Active Listening",
+    "Négociation",
+    "Negotiation",
+    "Travail d'équipe",
+    "Team Work",
+    "Collaboration",
+    "Esprit d'équipe",
+    "Leadership",
+    "Gestion de projet",
+    "Project Management",
+    "Gestion du temps",
+    "Time Management",
+    "Prise de décision",
+    "Decision Making",
+    "Délégation",
+    "Résolution de problèmes",
+    "Problem Solving",
+    "Esprit critique",
+    "Pensée critique",
+    "Critical Thinking",
+    "Capacité d'analyse",
+    "Analytical Skills",
+    "Créativité",
+    "Creativity",
+    "Autonomie",
+    "Adaptabilité",
+    "Adaptability",
+    "Rigueur",
+    "Organisation",
+    "Sens de l'initiative",
+    "Proactivité",
+    "Gestion du stress",
+    "Apprentissage continu",
+    "Curiosité",
+    "Empathie",
+    "Intelligence émotionnelle",
+    "Emotional Intelligence",
+    "Sens des responsabilités"
   ]
 }
