@@ -6,30 +6,37 @@
 
 Dataset : Vanetik, N.; Kogan, G. *Job Vacancy Ranking with Sentence Embeddings, Keywords, and Named Entities*. Information 2023, 14, 468.
 
-## Résultats
+## Résultats — progression en 3 étapes
 
-| Mesure | Valeur |
-|---|---|
-| CV évalués | 29 (1 CV vide ignoré) |
-| Corrélation pipeline vs Annotateur 1 | **-0.458** |
-| Corrélation pipeline vs Annotateur 2 | **-0.148** |
-| Accord entre les 2 annotateurs humains (référence) | 0.191 |
+| Étape | Description | Corrélation vs Annotateur 1 | Corrélation vs Annotateur 2 |
+|---|---|---|---|
+| 1 | Score sémantique brut (`calculate_match_score` d'origine) | -0.458 | -0.148 |
+| 2 | + extraction des phrases pertinentes avant l'embedding (`extract_relevant_excerpt`) | -0.379 | -0.141 |
+| 3 | + score combiné : 50% sémantique + 50% recouvrement de compétences (`calculate_combined_score`) | **-0.104** | **-0.000** |
+| — | *Accord entre les 2 annotateurs humains (référence)* | *0.191* | *0.191* |
+
+CV évalués : 29 (1 CV vide ignoré sur les 30).
 
 ## Interprétation
 
-Le résultat est négatif : le pipeline classe les offres **à l'inverse** de ce que jugent les humains, sur ce dataset. Même l'accord entre les deux recruteurs humains est modeste (0.191), ce qui est normal (le jugement humain sur un CV est en partie subjectif), mais le pipeline fait significativement pire que le hasard, ce qui indique un vrai problème plutôt qu'une simple difficulté du problème.
+**Étape 1 — diagnostic du problème initial.** Le score sémantique brut était en désaccord quasi systématique avec le jugement humain (corrélation négative). Hypothèse retenue : les offres d'emploi contiennent d'importants blocs de texte hors-sujet (avantages sociaux, mentions légales, présentation d'entreprise), et le modèle d'embedding (`all-MiniLM-L6-v2`) tronque automatiquement tout texte au-delà d'environ 256 tokens en ne gardant que le début — souvent la partie la moins pertinente du texte.
 
-**Hypothèse principale : le bruit textuel domine le signal.**
-Les offres d'emploi de ce dataset contiennent d'importants blocs de texte hors-sujet (avantages sociaux, mentions légales, description de l'entreprise, politique de non-discrimination), parfois plus longs que la partie décrivant réellement le poste. Exemple observé : une offre de ~2000 mots dont environ 15% seulement concernent les compétences recherchées. Le score sémantique (`calculate_match_score`) encode le texte brut dans son intégralité (après un nettoyage qui ne fait que normaliser les espaces, sans retirer ce bruit), ce qui peut faire dominer la similarité par du texte générique plutôt que par les compétences réelles.
+**Étape 2 — première correction.** L'ajout de `extract_relevant_excerpt()`, qui priorise les phrases denses en mots-clés de compétences/exigences avant l'encodage, améliore légèrement le résultat mais ne suffit pas : le score sémantique global reste sensible à des similarités de style d'écriture qui n'ont rien à voir avec l'adéquation réelle des compétences.
 
-Observation appuyant cette hypothèse : sur la majorité des 29 CV, le pipeline classe systématiquement les **mêmes offres** en tête ou en fin de classement, presque indépendamment du contenu du CV — signe d'un biais structurel (probablement lié à la longueur/au style du texte de l'offre) plutôt que d'une vraie évaluation compétence par compétence.
+**Étape 3 — score combiné.** Ajouter `calculate_skill_overlap_score()` (proportion des compétences requises par l'offre effectivement présentes dans le CV, indépendant du bruit textuel) et le combiner à 50/50 avec le score sémantique donne le meilleur résultat des trois : la corrélation avec l'Annotateur 2 devient neutre (0.000, ni bonne ni mauvaise) et celle avec l'Annotateur 1 se rapproche nettement de zéro (-0.104, contre -0.458 au départ).
 
-## Pistes d'amélioration (non implémentées ici)
+**Limite persistante.** Même le score combiné n'atteint pas le niveau d'accord entre les deux recruteurs humains eux-mêmes (0.191). Cela suggère qu'une partie du jugement humain repose sur des éléments qu'aucune des deux approches ne capture (séniorité globale, compétences transférables, "potentiel" perçu, qualité de présentation du CV) — une limite connue des systèmes de matching automatique documentée dans la littérature scientifique du domaine, pas un simple bug à corriger.
 
-1. **Nettoyer les offres d'emploi avant l'encodage sémantique** : isoler la section "compétences requises"/"responsabilités" et exclure les sections légales/avantages avant de calculer l'embedding.
-2. **Pondérer le score final entre similarité sémantique et recouvrement de compétences** (`compare_skills`) plutôt que de se reposer uniquement sur la similarité sémantique globale — le recouvrement de compétences est probablement un signal plus robuste au bruit.
-3. **Tester avec des offres plus courtes/mieux structurées** pour confirmer que le problème vient bien de la longueur/du bruit et non du modèle lui-même.
+## Pistes non explorées (hors délai du projet)
+
+- Pondérer différemment le score combiné (ex: 30% sémantique / 70% compétences, ou l'inverse) et chercher le poids optimal.
+- Utiliser un NER (reconnaissance d'entités nommées) pour extraire des compétences au-delà du dictionnaire fixe `skills.json`.
+- Tester sur un dataset plus large pour confirmer que la tendance observée est stable (30 CV / 5 offres reste un échantillon modeste).
+
+## Recommandation pour l'équipe
+
+`calculate_combined_score()` a été ajoutée dans `matcher.py` **en plus** de `calculate_match_score()`, sans remplacer cette dernière : l'API actuelle (`/analyze`) continue d'utiliser le score sémantique seul. Vu les résultats ci-dessus, il serait pertinent d'en discuter en groupe : basculer `analyzer.py` sur `calculate_combined_score()` améliorerait probablement la qualité perçue du matching en production, mais c'est un changement de comportement qui mérite une décision collective plutôt qu'un changement silencieux dans cette PR.
 
 ## Bonus : bug de code trouvé pendant l'investigation
 
-`app/services/text_cleaner.py` contenait deux définitions de `clean_text()` et `normalize_text()` (probablement les restes d'une fusion Git mal résolue) — corrigé dans cette PR (aucun changement de comportement, juste suppression du code mort).
+`app/services/text_cleaner.py` contenait deux définitions de `clean_text()` et `normalize_text()` (probablement les restes d'une fusion Git mal résolue) — corrigé dans une PR précédente (aucun changement de comportement, juste suppression du code mort).

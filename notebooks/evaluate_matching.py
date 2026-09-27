@@ -55,7 +55,8 @@ from scipy.stats import spearmanr
 # l'endroit d'où ce script est lancé.
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from app.services.matcher import calculate_match_score
+from app.services.matcher import calculate_match_score, calculate_combined_score
+from app.services.skill_extractor import extract_skills
 
 
 DATASET_DIR = Path(__file__).resolve().parent.parent.parent / "vacancy-resume-matching-dataset"
@@ -104,7 +105,17 @@ def run_evaluation():
             print(f"CV {cv_index} vide, ignoré")
             continue
 
+        cv_skills = extract_skills(cv_text)
+
         scores = [calculate_match_score(cv_text, job_text) for job_text in jobs]
+
+        combined_scores = [
+            calculate_combined_score(
+                cv_text, job_text,
+                cv_skills, extract_skills(job_text)
+            )
+            for job_text in jobs
+        ]
 
         # Score -> classement (1 = meilleur score)
         order = sorted(range(5), key=lambda i: -scores[i])
@@ -112,28 +123,38 @@ def run_evaluation():
         for rank, job_i in enumerate(order, start=1):
             model_rank[job_i] = rank
 
+        combined_order = sorted(range(5), key=lambda i: -combined_scores[i])
+        combined_rank = [0] * 5
+        for rank, job_i in enumerate(combined_order, start=1):
+            combined_rank[job_i] = rank
+
         human_1 = ANNOTATOR_1[cv_index - 1]
         human_2 = ANNOTATOR_2[cv_index - 1]
 
         corr_1, _ = spearmanr(model_rank, human_1)
         corr_2, _ = spearmanr(model_rank, human_2)
+        combined_corr_1, _ = spearmanr(combined_rank, human_1)
+        combined_corr_2, _ = spearmanr(combined_rank, human_2)
         inter_annotator, _ = spearmanr(human_1, human_2)
 
         results.append({
             "cv": cv_index,
             "scores": scores,
             "model_rank": model_rank,
+            "combined_scores": combined_scores,
+            "combined_rank": combined_rank,
             "human_1": human_1,
             "human_2": human_2,
             "corr_model_vs_annotator1": corr_1,
             "corr_model_vs_annotator2": corr_2,
+            "combined_corr_vs_annotator1": combined_corr_1,
+            "combined_corr_vs_annotator2": combined_corr_2,
             "inter_annotator_agreement": inter_annotator,
         })
 
         print(
-            f"CV {cv_index:2d} | scores={[round(s) for s in scores]} "
-            f"| classement pipeline={model_rank} "
-            f"| rho vs A1={corr_1:.2f} vs A2={corr_2:.2f}"
+            f"CV {cv_index:2d} | semantique={[round(s) for s in scores]} rho={corr_1:.2f}/{corr_2:.2f} "
+            f"| combine={[round(s) for s in combined_scores]} rho={combined_corr_1:.2f}/{combined_corr_2:.2f}"
         )
 
     output_path = Path(__file__).resolve().parent / "eval_results.json"
@@ -142,14 +163,18 @@ def run_evaluation():
 
     mean_corr1 = statistics.mean(r["corr_model_vs_annotator1"] for r in results)
     mean_corr2 = statistics.mean(r["corr_model_vs_annotator2"] for r in results)
+    mean_combined_corr1 = statistics.mean(r["combined_corr_vs_annotator1"] for r in results)
+    mean_combined_corr2 = statistics.mean(r["combined_corr_vs_annotator2"] for r in results)
     mean_inter = statistics.mean(r["inter_annotator_agreement"] for r in results)
 
     print()
     print("=== RÉSULTATS AGRÉGÉS ===")
-    print(f"CV évalués                                   : {len(results)}")
-    print(f"Corrélation moyenne pipeline vs Annotateur 1 : {mean_corr1:.3f}")
-    print(f"Corrélation moyenne pipeline vs Annotateur 2 : {mean_corr2:.3f}")
-    print(f"Accord inter-annotateurs (référence)         : {mean_inter:.3f}")
+    print(f"CV évalués                                            : {len(results)}")
+    print(f"[Sémantique seul]  corrélation vs Annotateur 1        : {mean_corr1:.3f}")
+    print(f"[Sémantique seul]  corrélation vs Annotateur 2        : {mean_corr2:.3f}")
+    print(f"[Score combiné]    corrélation vs Annotateur 1        : {mean_combined_corr1:.3f}")
+    print(f"[Score combiné]    corrélation vs Annotateur 2        : {mean_combined_corr2:.3f}")
+    print(f"Accord inter-annotateurs (référence)                  : {mean_inter:.3f}")
     print()
     print(f"Résultats détaillés sauvegardés dans : {output_path}")
 
