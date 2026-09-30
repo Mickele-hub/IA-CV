@@ -2,21 +2,19 @@
 venv/
 .venv/
 __pycache__/
-*.pyc
+*.py[cod]
 
 # Environment
 .env
 .env.*
 
-# Training checkpoints
+# ML checkpoints
 notebooks/tmp_trainer/
-
-# Large ML models
-models/
 *.pt
 *.pth
+*.ckpt
 *.safetensors
 
-# Logs / caches
-*.log
+# Caches
 .cache/
+*.log
