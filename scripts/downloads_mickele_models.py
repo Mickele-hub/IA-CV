@@ -30,6 +30,7 @@ MODELS_DIR = BASE_DIR / "models"
 MODELS = {
     "embedding_model": "Mickele-hub/cv-ai-embedding-model",
     "embedding_model_test": "Mickele-hub/cv-ai-embedding-model-test",
+    "embedding_model_severino2004": "Severino2004/cv-ai-embedding-model-severino2004",
 }
 
 
